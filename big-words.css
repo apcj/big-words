@@ -4,8 +4,12 @@ body {
     overflow: hidden;
 }
 
+.big-words {
+    display: none;
+}
+
 text {
-    font-family: 'Source Sans Pro', 'Open Sans', sans-serif;
+    font-family: 'Uni Sans Heavy', 'Open Sans', sans-serif;
     font-weight: 900;
 }
 

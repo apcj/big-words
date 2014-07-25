@@ -13,17 +13,19 @@
         return context.measureText(text).width;
     }
 
-    d3.selectAll('svg').each(function() {
-        var svg = d3.select(this);
+    d3.selectAll('div.big-words').each(function() {
+        var parent = d3.select(this.parentElement);
+        var svg = parent.append('svg');
 
         var maxSvgWidth = 0;
 
-        svg.selectAll('text').each(function() {
+        d3.select(this).selectAll('p.full-width').each(function() {
             var text = d3.select(this);
             maxSvgWidth = measureText(text.text(), window.getComputedStyle(this, null));
-            text
+            svg.append('text')
                 .attr('font-size', '100px')
-                .attr('alignment-baseline', 'central');
+                .attr('alignment-baseline', 'central')
+                .text(text.text());
         });
 
         svg.attr('viewBox', [0, -50, maxSvgWidth, 100].join(' '));
