@@ -8,7 +8,7 @@ body {
     display: none;
 }
 
-text {
+p.full-width {
     font-family: 'Uni Sans Heavy', 'Open Sans', sans-serif;
     font-weight: 900;
 }
