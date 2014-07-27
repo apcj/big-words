@@ -4,7 +4,7 @@ body {
     overflow: hidden;
 }
 
-.big-words {
+.big-words, .slide-words {
     display: none;
 }
 
