@@ -23,11 +23,13 @@
 
     d3.selectAll('div.slide-words').each(function() {
         var parent = d3.select(this.parentElement);
-        var svg = parent.append('svg');
+        var svg = parent.append('svg')
+            .attr('class', 'fill');
 
         var maxSvgWidth = 1000;
         var totalHeight = 0;
         var padding = 100;
+        var skewAngle = 15;
 
         d3.select(this).selectAll('p.full-width').each(function(d, i) {
             var text = d3.select(this);
@@ -37,19 +39,21 @@
             totalHeight += fontSize;
             var direction = 2 * i - 1;
             svg.append('text')
+                .attr('transform', 'skewX(' + -skewAngle + ') rotate(' + -skewAngle + ')')
                 .attr('font-size', fontSize + 'px')
                 .call(copyStyle(htmlStyle))
                 .text(text.text())
+                .attr('text-anchor', 'middle')
                 .attr('y', totalHeight)
                 .attr('x', direction * maxSvgWidth)
                 .transition().duration(200).ease('linear')
-                .attr('x', i * padding)
+                .attr('x', direction * padding)
                 .transition().duration(1000)
-                .attr('x', padding - i * padding)
+                .attr('x', -direction * padding)
                 .transition().duration(200)
                 .attr('x', -direction * maxSvgWidth);
         });
 
-        svg.attr('viewBox', [0, 0, maxSvgWidth, totalHeight].join(' '));
+        svg.attr('viewBox', [-maxSvgWidth / 2, 0, maxSvgWidth, totalHeight].join(' '));
     });
 })();
