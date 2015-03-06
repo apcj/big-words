@@ -108,6 +108,7 @@
                 .attr('stroke', 'black')
                 .attr('stroke-width', 1);
         }
+        var tickCounter = 0;
         function tick(){
             arrows
                 .attr('transform', function(d) { return 'translate(' + d.source.x + ' ' + d.source.y + ')' })
@@ -120,7 +121,13 @@
             circles
                 .attr('cx', function(d) { return d.x; })
                 .attr('cy', function(d) { return d.y; });
+            tickCounter++;
         }
+
+        setTimeout(function() {
+            d3.select('#fps').text(tickCounter);
+            tickCounter = 0;
+        }, 1000);
 
         update();
         tick();
