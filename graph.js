@@ -1,7 +1,7 @@
 (function() {
 
     d3.selectAll('div.slide').each(function() {
-        var size = 1000;
+        var size = 2000;
         var nodeCount = size * size / 500;
         var nodeRadius = 7;
         var connectReach = 200;
@@ -69,77 +69,7 @@
         }
         connectNeighbours();
 
-        var leftToRight = [];
-        var topToBottom = [];
-        var limit = size * 2 / 3;
-        var filteredNodes = nodes;
-
-        setTimeout(function() {
-
-            function inTheBox(node) {
-                return node.x > -limit && node.x < limit && node.y > -limit && node.y < limit;
-            }
-
-            filteredNodes = nodes.filter(inTheBox);
-            filteredNodes.forEach(function(d) {
-                d.inTheBox = true;
-            });
-            var cuts = relationships.filter(function(d) {
-                return (inTheBox(d.source) && !inTheBox(d.target)) || (!inTheBox(d.source) && inTheBox(d.target));
-            });
-
-            function sort(dimension, relationships) {
-                return relationships.sort(function(a, b) {
-                    return (dimension(a.source) + dimension(a.target)) - (dimension(b.source) + dimension(b.target));
-                })
-            }
-
-            function x(d) {
-                return d.x;
-            }
-
-            function y(d) {
-                return d.y;
-            }
-
-            function crosses(dimension, threshold) {
-                return function(d) {
-                    return (dimension(d.source) < threshold && dimension(d.target) > threshold) ||
-                        (dimension(d.source) > threshold && dimension(d.target) < threshold);
-                }
-            }
-
-            var edges = {
-                left: sort(y, cuts.filter(crosses(x, -limit))),
-                right: sort(y, cuts.filter(crosses(x, limit))),
-                top: sort(x, cuts.filter(crosses(y, -limit))),
-                bottom: sort(x, cuts.filter(crosses(y, limit)))
-            };
-
-            function pairUp(edge1, edge2) {
-                var pairs = [];
-                var possiblePairs = Math.min(edge1.length, edge2.length);
-                for (var i = 0; i < possiblePairs; i++) {
-                    var cut1 = edge1[i];
-                    var cut2 = edge2[i];
-                    var pair = {
-                        inside: inTheBox(cut1.source) ? cut1.source : cut1.target,
-                        outside: inTheBox(cut2.source) ? cut2.target : cut2.source
-                    };
-                    pair.inside.isInside = true;
-                    pair.outside.isOutside = true;
-                    pairs.push(pair);
-                }
-                return pairs;
-            }
-
-            leftToRight = pairUp(edges.left, edges.right);
-            topToBottom = pairUp(edges.top, edges.bottom);
-            console.table(topToBottom.map(function(d) {return { inside: d.inside.x, outside: d.outside.x };}));
-        }, 10000);
-
         var parent = d3.select(this);
-
         function viewBox(size) {
             return [-size / 2, -size / 2, size, size].join(' ');
         }
@@ -155,29 +85,7 @@
 
         var arrows, circles;
         function update() {
-            for (var i = 0; i < leftToRight.length; i++) {
-                var pair = leftToRight[i];
-                var xMid = (pair.inside.x + pair.outside.x - limit * 2) / 2;
-                var yMid = (pair.inside.y + pair.outside.y) / 2;
-                pair.inside.x = xMid;
-                pair.inside.y = yMid;
-                pair.outside.x = xMid + limit * 2;
-                pair.outside.y = yMid;
-            }
-
-            for (i = 0; i < topToBottom.length; i++) {
-                pair = topToBottom[i];
-                xMid = (pair.inside.x + pair.outside.x ) / 2;
-                yMid = (pair.inside.y + pair.outside.y - limit * 2) / 2;
-                pair.inside.x = xMid;
-                pair.inside.y = yMid;
-                pair.outside.x = xMid;
-                pair.outside.y = yMid + limit * 2;
-            }
-
-            arrows = arrowLayer.selectAll('path.arrow').data(relationships.filter(function(d) {
-                return d.source.inTheBox || d.target.inTheBox;
-            }), function(d) { return d.id; });
+            arrows = arrowLayer.selectAll('path.arrow').data(relationships, function(d) { return d.id; });
 
             arrows.enter().append('path')
                 .attr('class', 'arrow')
@@ -191,22 +99,14 @@
 
             arrows.exit().remove();
 
-            circles = circleLayer.selectAll('circle.node').data(filteredNodes, function(d) { return d.id; });
+            circles = circleLayer.selectAll('circle.node').data(nodes);
 
             circles.enter().append('circle')
                 .attr('class', 'node')
                 .attr('r', function(d) { return d.radius; })
+                .attr('fill', 'white')
                 .attr('stroke', 'black')
                 .attr('stroke-width', 1);
-
-            circles
-                .attr('fill', function(d) {
-                    if (d.isInside) return 'yellow';
-                    if (d.isOutside) return 'green';
-                    return 'white';
-                });
-
-            circles.exit().remove();
         }
         var tickCounter = 0;
         function tick(){
@@ -224,7 +124,7 @@
             tickCounter++;
         }
 
-        setInterval(function() {
+        setTimeout(function() {
             d3.select('#fps').text(tickCounter);
             tickCounter = 0;
         }, 1000);
