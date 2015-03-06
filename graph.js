@@ -1,7 +1,7 @@
 (function() {
 
     d3.selectAll('div.slide').each(function() {
-        var size = 1000;
+        var size = 2000;
         var nodeCount = size * size / 500;
         var nodeRadius = 7;
         var connectReach = 200;
@@ -76,7 +76,7 @@
 
         var svg = parent.append('svg')
             .attr('class', 'fill')
-            .attr('viewBox', viewBox(size));
+            .attr('viewBox', viewBox(size * 2));
 
         var arrowLayer = svg.append('g')
             .attr('class', 'layer');

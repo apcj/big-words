@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Graph</title>
+  <link rel="stylesheet" href="big-words.css">
+  <script src="lib/d3.js" charset="UTF-8"></script>
+  <script src="lib/sigma.min.js" charset="UTF-8"></script>
+  <script src="lib/sigma.layout.forceAtlas2.min.js" charset="UTF-8"></script>
+</head>
+<body>
+<div class="slide">
+  <div id="container" class="fill"></div>
+</div>
+
+<script>
+
+var s = new sigma('container');
+
+var size = 2000;
+var nodeCount = size * size / 500;
+var nodeRadius = 1;
+var connectReach = 200;
+var maxDegree = 5;
+var nextRelationshipId = 0;
+
+for (var i = 0; i < nodeCount; i++) {
+  s.graph.addNode({
+    id: i + '',
+    x: size * (Math.random() * 2 - 1),
+    y: size * (Math.random() * 2 - 1),
+    radius: nodeRadius,
+    size: .1,
+    degree: Math.floor(Math.random() * (maxDegree - 1)) + 1,
+    neighbours: []
+  });
+}
+
+function findNeighbours(node) {
+  var r = node.radius + connectReach,
+      nx1 = node.x - r,
+      nx2 = node.x + r,
+      ny1 = node.y - r,
+      ny2 = node.y + r;
+  return function(quad, x1, y1, x2, y2) {
+    if (quad.point && (quad.point !== node)) {
+      var x = node.x - quad.point.x,
+          y = node.y - quad.point.y,
+          l = Math.sqrt(x * x + y * y),
+          r = node.radius + connectReach + quad.point.radius;
+      if (l < r) {
+        node.neighbours.push({
+          distance: l,
+          node: quad.point
+        });
+      }
+    }
+    return x1 > nx2 || x2 < nx1 || y1 > ny2 || y2 < ny1;
+  };
+}
+
+function connectNeighbours() {
+  var nodes = s.graph.nodes();
+  var q = d3.geom.quadtree(nodes),
+      i = 0,
+      n = nodes.length;
+
+  while (++i < n) q.visit(findNeighbours(nodes[i]));
+
+  for (i = 0; i < n; i++)
+  {
+    var node = nodes[i];
+    node.neighbours.sort(function(a, b) { return a.distance - b.distance; });
+    for (var j = 0; j < node.degree && j < node.neighbours.length; j++)
+    {
+      var neighbour = node.neighbours[j];
+      s.graph.addEdge({
+        id: nextRelationshipId++ + '',
+        source: node.id,
+        target: neighbour.node.id
+      });
+    }
+  }
+}
+connectNeighbours();
+
+s.refresh();
+
+s.startForceAtlas2({
+  barnesHutOptimize: true,
+  barnesHutTheta: 0.99,
+  adjustSizes: true
+});
+
+</script>
+</body>
+</html>
