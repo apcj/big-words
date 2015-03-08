@@ -38,7 +38,7 @@ do ->
           r = node.radius + connectReach + quad.point.radius
           if l < r
             node.neighbours.push
-              distance: l,
+              distance: l
               node: quad.point
         x1 > nx2 or x2 < nx1 or y1 > ny2 or y2 < ny1
 
@@ -49,13 +49,14 @@ do ->
         q.visit(findNeighbours(node))
 
       for node in nodes
-        node.neighbours.sort((a, b) -> a.distance - b.distance)
+        node.neighbours.sort((a, b) ->
+          a.distance - b.distance)
         connections = Math.min(node.degree, node.neighbours.length)
         for i in [0..connections - 1]
           neighbour = node.neighbours[i]
           relationships.push
-            id: nextRelationshipId++,
-            source: node,
+            id: nextRelationshipId++
+            source: node
             target: neighbour.node
 
     connectNeighbours()
@@ -69,44 +70,48 @@ do ->
     .attr('viewBox', viewBox(size * 2))
 
     arrowLayer = svg.append('g')
-      .attr('class', 'layer')
+    .attr('class', 'layer')
+
     circleLayer = svg.append('g')
-      .attr('class', 'layer')
+    .attr('class', 'layer')
 
     arrows = []
     circles = []
     update = ->
-      arrows = arrowLayer.selectAll('path.arrow').data(relationships, (d) -> d.id)
+      arrows = arrowLayer.selectAll('path.arrow').data(relationships, (d) ->
+        d.id)
 
       arrows.enter().append('path')
-        .attr('class', 'arrow')
-        .attr('fill', 'none')
-        .attr('stroke', 'red')
-        .attr('stroke-width', 10)
-        .transition()
-        .duration(2000)
-        .attr('stroke', 'black')
-        .attr('stroke-width', 1)
+      .attr('class', 'arrow')
+      .attr('fill', 'none')
+      .attr('stroke', 'red')
+      .attr('stroke-width', 10)
+      .transition()
+      .duration(2000)
+      .attr('stroke', 'black')
+      .attr('stroke-width', 1)
 
       arrows.exit().remove()
 
       circles = circleLayer.selectAll('circle.node').data(nodes)
 
       circles.enter().append('circle')
-        .attr('class', 'node')
-        .attr('r', (d) -> d.radius)
-        .attr('fill', 'white')
-        .attr('stroke', 'black')
-        .attr('stroke-width', 1)
+      .attr('class', 'node')
+      .attr('r', (d) ->
+        d.radius)
+      .attr('fill', 'white')
+      .attr('stroke', 'black')
+      .attr('stroke-width', 1)
     tickCounter = 0
     tick = ->
       arrows
-        .attr('transform', (d) -> 'translate(' + d.source.x + ' ' + d.source.y + ')')
-        .attr('d', (d) ->
-          dx = d.target.x - d.source.x
-          dy = d.target.y - d.source.y
-          return 'M 0 0 L ' + dx + ' ' + dy
-        )
+      .attr('transform', (d) ->
+        'translate(' + d.source.x + ' ' + d.source.y + ')')
+      .attr('d', (d) ->
+        dx = d.target.x - d.source.x
+        dy = d.target.y - d.source.y
+        return 'M 0 0 L ' + dx + ' ' + dy
+      )
 
       circles
         .attr('cx', (d) -> d.x )
@@ -121,21 +126,21 @@ do ->
     update()
     tick()
     force = d3.layout.force()
-      .nodes(nodes)
-      .links(relationships)
-      .charge(-10)
-      .gravity(0.01)
-      .linkDistance(40)
-      .on('tick', tick)
-      .start()
+    .nodes(nodes)
+    .links(relationships)
+    .charge(-10)
+    .gravity(0.01)
+    .linkDistance(40)
+    .on('tick', tick)
+    .start()
 
     addRelationship = ->
       i = Math.floor(Math.random() * nodeCount)
       node = nodes[i]
       if node.degree < maxDegree - 1 and node.neighbours.length > node.degree
         relationships.push
-          id: nextRelationshipId++,
-          source: node,
+          id: nextRelationshipId++
+          source: node
           target: node.neighbours[node.degree].node
         node.degree++
 
@@ -153,6 +158,6 @@ do ->
         removeRelationship()
       update()
       force
-        .links(relationships)
-        .start()
+      .links(relationships)
+      .start()
     , 100
