@@ -1,7 +1,7 @@
 (function() {
 
     d3.selectAll('div.slide').each(function() {
-        var size = 2000;
+        var size = 200;
         var nodeCount = size * size / 500;
         var nodeRadius = 7;
         var connectReach = 200;
@@ -124,7 +124,7 @@
             tickCounter++;
         }
 
-        setTimeout(function() {
+        setInterval(function() {
             d3.select('#fps').text(tickCounter);
             tickCounter = 0;
         }, 1000);
