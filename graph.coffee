@@ -5,62 +5,70 @@ dummyStatementToHelpIntelliJWithPreamble = true
 
 do ->
   d3.selectAll('div.slide').each ->
-    size = 200
-    nodeCount = size * size / 500
-    nodeRadius = 7
-    connectReach = 200
-    maxDegree = 5
-    nodes = []
-    relationships = []
-    nextRelationshipId = 0
     modifications = 10
+    buildGraph = ->
+      size = 200
+      nodeCount = size * size / 500
+      nodeRadius = 7
+      connectReach = 200
+      maxDegree = 5
+      nodes = []
+      relationships = []
+      nextRelationshipId = 0
 
-    for i in [0..nodeCount - 1]
-      nodes.push
-        id: i
-        x: size * (Math.random() * 2 - 1)
-        y: size * (Math.random() * 2 - 1)
-        radius: nodeRadius
-        degree: Math.floor(Math.random() * (maxDegree - 1)) + 1
-        neighbours: []
+      for i in [0..nodeCount - 1]
+        nodes.push
+          id: i
+          x: size * (Math.random() * 2 - 1)
+          y: size * (Math.random() * 2 - 1)
+          radius: nodeRadius
+          degree: Math.floor(Math.random() * (maxDegree - 1)) + 1
+          neighbours: []
 
-    findNeighbours = (node) ->
-      r = node.radius + connectReach
-      nx1 = node.x - r
-      nx2 = node.x + r
-      ny1 = node.y - r
-      ny2 = node.y + r
-      (quad, x1, y1, x2, y2) ->
-        if quad.point and quad.point isnt node
-          x = node.x - quad.point.x
-          y = node.y - quad.point.y
-          l = Math.sqrt(x * x + y * y)
-          r = node.radius + connectReach + quad.point.radius
-          if l < r
-            node.neighbours.push
-              distance: l
-              node: quad.point
-        x1 > nx2 or x2 < nx1 or y1 > ny2 or y2 < ny1
+      findNeighbours = (node) ->
+        r = node.radius + connectReach
+        nx1 = node.x - r
+        nx2 = node.x + r
+        ny1 = node.y - r
+        ny2 = node.y + r
+        (quad, x1, y1, x2, y2) ->
+          if quad.point and quad.point isnt node
+            x = node.x - quad.point.x
+            y = node.y - quad.point.y
+            l = Math.sqrt(x * x + y * y)
+            r = node.radius + connectReach + quad.point.radius
+            if l < r
+              node.neighbours.push
+                distance: l
+                node: quad.point
+          x1 > nx2 or x2 < nx1 or y1 > ny2 or y2 < ny1
 
-    connectNeighbours = ->
-      q = d3.geom.quadtree(nodes)
+      connectNeighbours = ->
+        q = d3.geom.quadtree(nodes)
 
-      for node in nodes
-        q.visit(findNeighbours(node))
+        for node in nodes
+          q.visit(findNeighbours(node))
 
-      for node in nodes
-        node.neighbours.sort((a, b) ->
-          a.distance - b.distance)
-        connections = Math.min(node.degree, node.neighbours.length)
-        for i in [0..connections - 1]
-          neighbour = node.neighbours[i]
-          relationships.push
-            id: nextRelationshipId++
-            source: node
-            target: neighbour.node
+        for node in nodes
+          node.neighbours.sort((a, b) ->
+            a.distance - b.distance)
+          connections = Math.min(node.degree, node.neighbours.length)
+          for i in [0..connections - 1]
+            neighbour = node.neighbours[i]
+            relationships.push
+              id: nextRelationshipId++
+              source: node
+              target: neighbour.node
 
-    connectNeighbours()
+      connectNeighbours()
 
+      {
+        nodes: nodes
+        relationships: relationships
+      }
+
+    for i in [1..7]
+      graph = buildGraph()
     parent = d3.select(this)
     viewBox = (size) ->
       [-size / 2, -size / 2, size, size].join(' ')
