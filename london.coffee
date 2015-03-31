@@ -11,6 +11,7 @@ do ->
     .attr('fill', 'none')
     .attr('stroke', 'black')
     .attr('stroke-width', 1)
+    .attr('marker-end', 'url(#markerArrow)')
 
     lines
     .attr('d', (d) -> ['M', d.source.x, d.source.y, 'L', d.target.x, d.target.y].join(' '))
@@ -44,8 +45,8 @@ do ->
         y: wheelRadius * Math.sin(angle)
       nodes.push node
       relationships.push
-        source: node
-        target: hub
+        source: hub
+        target: node
       if previousNode
         relationships.push
           source: previousNode
@@ -99,22 +100,22 @@ do ->
     for y in [1..rows.length - 1]
       highRow = rows[y - 1]
       lowRow = rows[y]
-      [shortRow, longRow] = if lowRow.length < highRow.length
-        [lowRow, highRow]
+      if lowRow.length < highRow.length
+        for ignored, x in lowRow
+          relationships.push
+            source: highRow[x]
+            target: lowRow[x]
+          relationships.push
+            source: lowRow[x]
+            target: highRow[x + 1]
       else
-        [highRow, lowRow]
-      for bottom, x in shortRow
-        relationships.push
-          source: shortRow[x]
-          target: longRow[x]
-        relationships.push
-          source: shortRow[x]
-          target: longRow[x + 1]
-
-#      for x in [0..3]
-#        relationships.push
-#          source: highRow[x]
-#          target: lowRow[x]
+        for ignored, x in highRow
+          relationships.push
+            source: highRow[x]
+            target: lowRow[x]
+          relationships.push
+            source: lowRow[x + 1]
+            target: highRow[x]
 
     gherkinGroup = svg.append('g')
     .attr('transform', "translate(100 200)")
@@ -124,6 +125,18 @@ do ->
   d3.selectAll('div.slide').each ->
     svg = d3.select(this).append('svg')
     .attr('class', 'fill')
+
+    svg.append('defs')
+    .append('marker')
+    .attr('id', 'markerArrow')
+    .attr('viewBox', '0 -5 10 10')
+    .attr('refX', 20)
+    .attr('refY', 0)
+    .attr('markerWidth', 6)
+    .attr('markerHeight', 6)
+    .attr('orient', 'auto')
+    .append('path')
+    .attr('d', 'M0,-5L10,0L0,5')
 
     drawWheel svg
     drawGherkin svg
