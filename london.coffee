@@ -14,7 +14,16 @@ do ->
     .attr('marker-end', 'url(#markerArrow)')
 
     lines
-    .attr('d', (d) -> ['M', d.source.x, d.source.y, 'L', d.target.x, d.target.y].join(' '))
+    .attr('d', (d) ->
+      if d.arcRatio?
+        dx = d.target.x - d.source.x
+        dy = d.target.y - d.source.y
+        length = Math.sqrt(dx * dx + dy * dy)
+        arcRadius = length * d.arcRatio / 2
+        ['M', d.source.x, d.source.y, 'A', arcRadius, arcRadius, 0, 0, 1, d.target.x, d.target.y].join(' ')
+      else
+        ['M', d.source.x, d.source.y, 'L', d.target.x, d.target.y].join(' ')
+    )
 
     circles = container.selectAll('circle').data(nodes)
 
@@ -72,7 +81,7 @@ do ->
     nodes = []
     relationships = []
 
-    spacing = 30
+    spacing = 40
     rows = []
     d = 4
     w = 2
@@ -111,11 +120,25 @@ do ->
       else
         for ignored, x in highRow
           relationships.push
-            source: highRow[x]
-            target: lowRow[x]
-          relationships.push
-            source: lowRow[x + 1]
+            source: lowRow[x]
             target: highRow[x]
+          relationships.push
+            source: highRow[x]
+            target: lowRow[x + 1]
+
+    joinUp = (row) ->
+      for x in [0..row.length - 2]
+        relationships.push
+          source: row[x]
+          target:row[x + 1]
+
+    joinUp rows[0]
+    joinUp rows[rows.length - 1]
+
+    relationships.push
+      source: rows[0][0]
+      target: rows[0][rows[0].length - 1]
+      arcRatio: 1.03
 
     gherkinGroup = svg.append('g')
     .attr('transform', "translate(100 200)")
