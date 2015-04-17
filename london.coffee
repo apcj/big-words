@@ -28,7 +28,7 @@ do ->
     circles = container.selectAll('circle').data(nodes)
 
     circles.enter().append('circle')
-    .attr('r', 7)
+    .attr('r', (d) -> d.radius ? 7)
     .attr('fill', 'white')
     .attr('stroke', 'black')
     .attr('stroke-width', 1)
@@ -45,7 +45,7 @@ do ->
       y: 0
     nodes.push hub
     spokeCount = 20
-    wheelRadius = 100
+    wheelRadius = 150
     previousNode = null
     for i in [0..spokeCount - 1]
       angle = i * Math.PI * 2 / spokeCount
@@ -73,7 +73,7 @@ do ->
 
     d3.timer (time) ->
       wheelGroup
-      .attr('transform', "translate(400 200) rotate(#{(time / 100) % 360})")
+      .attr('transform', "translate(320 250) rotate(#{(time / 100) % 360})")
 
       false
 
@@ -141,9 +141,68 @@ do ->
       arcRatio: 1.03
 
     gherkinGroup = svg.append('g')
-    .attr('transform', "translate(100 200)")
+    .attr('transform', "translate(600 230)")
 
     drawGraph nodes, relationships, gherkinGroup
+
+  drawBigBen = (svg) ->
+    nodes = []
+    relationships = []
+
+    reflectedNodes = (x, y) ->
+      nodes.push left =
+        x: -x
+        y: y
+      nodes.push right =
+        x: x
+        y: y
+      relationships.push
+        source: left
+        target: right
+      [left, right]
+
+    faceTop = null
+    faceBottom = null
+    faceBox = 30
+
+    levels = [
+      reflectedNodes faceBox * 3 / 5, -faceBox * 12 / 5
+      reflectedNodes faceBox * 3 / 5, -faceBox * 2
+      faceTop = reflectedNodes faceBox, -faceBox
+      faceBottom = reflectedNodes faceBox, faceBox
+      reflectedNodes faceBox, faceBox * 7
+    ]
+    nodes.push tip =
+      x: 0
+      y: -faceBox * 4
+    relationships.push
+      source: tip
+      target: levels[0][0]
+    relationships.push
+      source: tip
+      target: levels[0][1]
+    nodes.push face =
+      x: 0
+      y: 0
+      radius: faceBox * 4 / 5
+    for corner in faceTop.concat faceBottom
+      relationships.push
+        source: face
+        target: corner
+
+    for y in [0..levels.length - 2]
+      relationships.push
+        source: levels[y][0]
+        target: levels[y + 1][0]
+      relationships.push
+        source: levels[y][1]
+        target: levels[y + 1][1]
+
+
+    bigBenGroup = svg.append('g')
+    .attr('transform', "translate(100 190)")
+
+    drawGraph nodes, relationships, bigBenGroup
 
   d3.selectAll('div.slide').each ->
     svg = d3.select(this).append('svg')
@@ -163,3 +222,4 @@ do ->
 
     drawWheel svg
     drawGherkin svg
+    drawBigBen svg
