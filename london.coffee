@@ -73,7 +73,7 @@ do ->
 
     d3.timer (time) ->
       wheelGroup
-      .attr('transform', "translate(320 250) rotate(#{(time / 100) % 360})")
+      .attr('transform', "translate(320 340) rotate(#{(time / 100) % 360})")
 
       false
 
@@ -141,7 +141,7 @@ do ->
       arcRatio: 1.03
 
     gherkinGroup = svg.append('g')
-    .attr('transform', "translate(600 230)")
+    .attr('transform', "translate(600 320)")
 
     drawGraph nodes, relationships, gherkinGroup
 
@@ -200,9 +200,42 @@ do ->
 
 
     bigBenGroup = svg.append('g')
-    .attr('transform', "translate(100 190)")
+    .attr('transform', "translate(100 280)")
 
     drawGraph nodes, relationships, bigBenGroup
+
+  drawShard = (svg) ->
+    nodes = []
+    relationships = []
+    size = 5
+
+    columns = []
+
+    for x in [-size..size]
+      previous = null
+      columns.push column = []
+      for y in [Math.abs(x)..size]
+        node =
+          x: x * 15
+          y: y * 90
+        nodes.push node
+        column.push node
+        if previous
+          relationships.push
+            source: previous
+            target: node
+        previous = node
+
+    console.log columns[x]
+    for x in [0..columns.length - 2]
+      relationships.push
+        target: columns[x + 1][0]
+        source: columns[x][0]
+
+    shardGroup = svg.append('g')
+    .attr('transform', "translate(900 50)")
+
+    drawGraph nodes, relationships, shardGroup
 
   d3.selectAll('div.slide').each ->
     svg = d3.select(this).append('svg')
@@ -223,3 +256,4 @@ do ->
     drawWheel svg
     drawGherkin svg
     drawBigBen svg
+    drawShard svg
