@@ -4,8 +4,29 @@
 dummyStatementToHelpIntelliJWithPreamble = true
 
 do ->
-  drawGraph = (nodes, relationships, container) ->
-    lines = container.selectAll('path').data(relationships)
+
+  class Graph
+    constructor: ->
+      @nodes = []
+      @relationships = []
+    node: (x, y) =>
+      node =
+        x: x
+        y: y
+      @nodes.push node
+      node
+    relationship: (source, target) =>
+      relationship =
+        source: source
+        target: target
+      @relationships.push relationship
+      relationship
+    merge: (o) ->
+      @relationships = @relationships.concat o.relationships
+      @nodes = @nodes.concat o.nodes
+
+  render = (g, container) ->
+    lines = container.selectAll('path').data(g.relationships)
 
     lines.enter().append('path')
     .attr('fill', 'none')
@@ -25,7 +46,7 @@ do ->
         ['M', d.source.x, d.source.y, 'L', d.target.x, d.target.y].join(' ')
     )
 
-    circles = container.selectAll('circle').data(nodes)
+    circles = container.selectAll('circle').data(g.nodes)
 
     circles.enter().append('circle')
     .attr('r', (d) -> d.radius ? 7)
@@ -37,50 +58,24 @@ do ->
     .attr('cx', (d) -> d.x)
     .attr('cy', (d) -> d.y)
 
-  drawWheel = (svg) ->
-    nodes = []
-    relationships = []
-    hub =
-      x: 0
-      y: 0
-    nodes.push hub
+  wheelGraph = (time) ->
+    g = new Graph()
+    hub = g.node(0, 0)
     spokeCount = 20
     wheelRadius = 150
     previousNode = null
     for i in [0..spokeCount - 1]
-      angle = i * Math.PI * 2 / spokeCount
-      node =
-        x: wheelRadius * Math.cos(angle)
-        y: wheelRadius * Math.sin(angle)
-      nodes.push node
-      relationships.push
-        source: hub
-        target: node
+      angle = (i * Math.PI * 2 / spokeCount + time / 10000) % 360
+      capsule = g.node(wheelRadius * Math.cos(angle), wheelRadius * Math.sin(angle))
+      g.relationship(hub, capsule)
       if previousNode
-        relationships.push
-          source: previousNode
-          target: node
-      previousNode = node
+        g.relationship(previousNode, capsule)
+      previousNode = capsule
+    g.relationship(previousNode, g.nodes[1])
+    g
 
-    if previousNode
-      relationships.push
-        source: previousNode
-        target: nodes[1]
-
-    wheelGroup = svg.append('g')
-
-    drawGraph nodes, relationships, wheelGroup
-
-    d3.timer (time) ->
-      wheelGroup
-      .attr('transform', "translate(320 340) rotate(#{(time / 100) % 360})")
-
-      false
-
-  drawGherkin = (svg) ->
-    nodes = []
-    relationships = []
-
+  gherkinGraph = ->
+    g = new Graph()
     spacing = 40
     rows = []
     d = 4
@@ -91,74 +86,42 @@ do ->
       else
         (x - .5 for x in [-w + 1..w])
       rows.push columns.map (x) ->
-        x: spacing * x * Math.cos(y / 4)
-        y: spacing * y
-
-    for row in rows
-      for node in row
-        nodes.push node
+        g.node(spacing * x * Math.cos(y / 4), spacing * y)
 
     for y in [0..rows.length - 3] by 2
-      relationships.push
-        source: rows[y + 2][0]
-        target: rows[y][0]
-      relationships.push
-        source: rows[y + 2][rows[y + 2].length - 1]
-        target: rows[y][rows[y].length - 1]
+      g.relationship(rows[y + 2][0], rows[y][0])
+      g.relationship(rows[y + 2][rows[y + 2].length - 1], rows[y][rows[y].length - 1])
 
     for y in [1..rows.length - 1]
       highRow = rows[y - 1]
       lowRow = rows[y]
       if lowRow.length < highRow.length
         for ignored, x in lowRow
-          relationships.push
-            source: highRow[x]
-            target: lowRow[x]
-          relationships.push
-            source: lowRow[x]
-            target: highRow[x + 1]
+          g.relationship(highRow[x], lowRow[x])
+          g.relationship(lowRow[x], highRow[x + 1])
       else
         for ignored, x in highRow
-          relationships.push
-            source: lowRow[x]
-            target: highRow[x]
-          relationships.push
-            source: highRow[x]
-            target: lowRow[x + 1]
+          g.relationship(lowRow[x], highRow[x])
+          g.relationship(highRow[x], lowRow[x + 1])
 
     joinUp = (row) ->
       for x in [0..row.length - 2]
-        relationships.push
-          source: row[x]
-          target:row[x + 1]
+        g.relationship(row[x], row[x + 1])
 
     joinUp rows[0]
     joinUp rows[rows.length - 1]
 
-    relationships.push
-      source: rows[0][0]
-      target: rows[0][rows[0].length - 1]
-      arcRatio: 1.03
+    g.relationship(rows[0][0], rows[0][rows[0].length - 1]).arcRatio = 1.03
 
-    gherkinGroup = svg.append('g')
-    .attr('transform', "translate(600 320)")
+    g
 
-    drawGraph nodes, relationships, gherkinGroup
-
-  drawBigBen = (svg) ->
-    nodes = []
-    relationships = []
+  bigBenGraph = ->
+    g = new Graph()
 
     reflectedNodes = (x, y) ->
-      nodes.push left =
-        x: -x
-        y: y
-      nodes.push right =
-        x: x
-        y: y
-      relationships.push
-        source: left
-        target: right
+      left = g.node(-x, y)
+      right = g.node(x, y)
+      g.relationship(left, right)
       [left, right]
 
     faceTop = null
@@ -172,41 +135,22 @@ do ->
       faceBottom = reflectedNodes faceBox, faceBox
       reflectedNodes faceBox, faceBox * 7
     ]
-    nodes.push tip =
-      x: 0
-      y: -faceBox * 4
-    relationships.push
-      source: tip
-      target: levels[0][0]
-    relationships.push
-      source: tip
-      target: levels[0][1]
-    nodes.push face =
-      x: 0
-      y: 0
-      radius: faceBox * 4 / 5
+    tip = g.node(0, -faceBox * 4)
+    g.relationship(tip, levels[0][0])
+    g.relationship(tip, levels[0][1])
+    face = g.node(0, 0)
+    face.radius = faceBox * 4 / 5
     for corner in faceTop.concat faceBottom
-      relationships.push
-        source: face
-        target: corner
+      g.relationship(face, corner)
 
     for y in [0..levels.length - 2]
-      relationships.push
-        source: levels[y][0]
-        target: levels[y + 1][0]
-      relationships.push
-        source: levels[y][1]
-        target: levels[y + 1][1]
+      g.relationship(levels[y][0], levels[y + 1][0])
+      g.relationship(levels[y][1], levels[y + 1][1])
 
+    g
 
-    bigBenGroup = svg.append('g')
-    .attr('transform', "translate(100 280)")
-
-    drawGraph nodes, relationships, bigBenGroup
-
-  drawShard = (svg) ->
-    nodes = []
-    relationships = []
+  shardGraph = ->
+    g = new Graph()
     size = 5
 
     columns = []
@@ -215,27 +159,49 @@ do ->
       previous = null
       columns.push column = []
       for y in [Math.abs(x)..size]
-        node =
-          x: x * 15
-          y: y * 90
-        nodes.push node
-        column.push node
+        column.push node = g.node(x * 15, y * 90)
         if previous
-          relationships.push
-            source: previous
-            target: node
+          g.relationship(previous, node)
         previous = node
 
-    console.log columns[x]
     for x in [0..columns.length - 2]
-      relationships.push
-        target: columns[x + 1][0]
-        source: columns[x][0]
+      g.relationship(columns[x][0], columns[x + 1][0])
 
-    shardGroup = svg.append('g')
-    .attr('transform', "translate(900 50)")
+    g
 
-    drawGraph nodes, relationships, shardGroup
+  canaryWharfGraph = ->
+    g = new Graph()
+    h1 = 350
+    h2 = 300
+    w1 = 40
+    w2 = 33
+    gap = 30
+
+    outline = [
+      g.node(-w1 - w2 * 2 - gap, 0)
+      g.node(-w1 - w2 * 2 - gap, -h2)
+      g.node(-w1 - gap, -h2)
+      g.node(-w1 - gap, 0)
+      g.node(-w1, 0)
+      g.node(-w1, -h1)
+      g.node(0, -h1 - w1)
+      g.node(w1, -h1)
+      g.node(w1, 0)
+      g.node(w1 + gap, 0)
+      g.node(w1 + gap, -h2)
+      g.node(w1 + w2 * 2 + gap, -h2)
+      g.node(w1 + w2 * 2 + gap, 0)
+    ]
+
+    for i in [0..outline.length - 2]
+      g.relationship(outline[i], outline[i + 1])
+    g
+
+  translate = (g, dx, dy) ->
+    for node in g.nodes
+      node.x += dx
+      node.y += dy
+    g
 
   d3.selectAll('div.slide').each ->
     svg = d3.select(this).append('svg')
@@ -253,7 +219,26 @@ do ->
     .append('path')
     .attr('d', 'M0,-5L10,0L0,5')
 
-    drawWheel svg
-    drawGherkin svg
-    drawBigBen svg
-    drawShard svg
+    container = svg.append('g')
+
+    generateGraph = (time) ->
+      g = new Graph()
+      landmarks = [
+        translate(wheelGraph(time), 320, 340)
+        translate(gherkinGraph(), 600, 320)
+        translate(bigBenGraph(), 100, 280)
+        translate(shardGraph(), 800, 50)
+        translate(canaryWharfGraph(), 1050, 500)
+      ]
+      out = null
+      for landmark in landmarks
+        g.merge(landmark)
+        if out
+          g.relationship(out, landmark.in)
+        out = landmark.out
+      g
+
+    d3.timer (time) ->
+      graph = generateGraph time
+      render graph, container
+      false
