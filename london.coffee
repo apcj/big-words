@@ -63,6 +63,8 @@ do ->
     hub = g.node(0, 0)
     spokeCount = 20
     wheelRadius = 150
+    spread = wheelRadius / 5
+    clearance = wheelRadius / 10
     previousNode = null
     for i in [0..spokeCount - 1]
       angle = (i * Math.PI * 2 / spokeCount + time / 10000) % 360
@@ -72,6 +74,8 @@ do ->
         g.relationship(previousNode, capsule)
       previousNode = capsule
     g.relationship(previousNode, g.nodes[1])
+    g.relationship(g.in = g.node(-spread, wheelRadius + clearance), hub)
+    g.relationship(hub, g.out = g.node(spread, wheelRadius + clearance))
     g
 
   gherkinGraph = ->
@@ -109,7 +113,10 @@ do ->
         g.relationship(row[x], row[x + 1])
 
     joinUp rows[0]
-    joinUp rows[rows.length - 1]
+    bottomRow = rows[rows.length - 1]
+    joinUp bottomRow
+    g.in = bottomRow[0]
+    g.out = bottomRow[bottomRow.length - 1]
 
     g.relationship(rows[0][0], rows[0][rows[0].length - 1]).arcRatio = 1.03
 
@@ -133,7 +140,7 @@ do ->
       reflectedNodes faceBox * 3 / 5, -faceBox * 2
       faceTop = reflectedNodes faceBox, -faceBox
       faceBottom = reflectedNodes faceBox, faceBox
-      reflectedNodes faceBox, faceBox * 7
+      [g.node(-faceBox, faceBox * 7), g.out = g.node(faceBox, faceBox * 7)]
     ]
     tip = g.node(0, -faceBox * 4)
     g.relationship(tip, levels[0][0])
@@ -146,7 +153,6 @@ do ->
     for y in [0..levels.length - 2]
       g.relationship(levels[y][0], levels[y + 1][0])
       g.relationship(levels[y][1], levels[y + 1][1])
-
     g
 
   shardGraph = ->
@@ -167,6 +173,8 @@ do ->
     for x in [0..columns.length - 2]
       g.relationship(columns[x][0], columns[x + 1][0])
 
+    g.in = columns[0][0]
+    g.out = columns[columns.length - 1][0]
     g
 
   canaryWharfGraph = ->
@@ -178,7 +186,7 @@ do ->
     gap = 30
 
     outline = [
-      g.node(-w1 - w2 * 2 - gap, 0)
+      g.in = g.node(-w1 - w2 * 2 - gap, 0)
       g.node(-w1 - w2 * 2 - gap, -h2)
       g.node(-w1 - gap, -h2)
       g.node(-w1 - gap, 0)
@@ -224,16 +232,17 @@ do ->
     generateGraph = (time) ->
       g = new Graph()
       landmarks = [
+        translate(bigBenGraph(), 100, 295)
         translate(wheelGraph(time), 320, 340)
-        translate(gherkinGraph(), 600, 320)
-        translate(bigBenGraph(), 100, 280)
-        translate(shardGraph(), 800, 50)
-        translate(canaryWharfGraph(), 1050, 500)
+        translate(gherkinGraph(), 600, 345)
+        translate(shardGraph(), 800, 55)
+        translate(canaryWharfGraph(), 1050, 505)
       ]
       out = null
       for landmark in landmarks
         g.merge(landmark)
-        if out
+        if out and landmark.in
+          console.log landmark.in.y
           g.relationship(out, landmark.in)
         out = landmark.out
       g
