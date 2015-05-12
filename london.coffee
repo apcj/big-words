@@ -21,6 +21,18 @@ do ->
         target: target
       @relationships.push relationship
       relationship
+    connect: (nodes) =>
+      for i in [0..nodes.length - 2]
+        @relationship(nodes[i], nodes[i + 1])
+      nodes
+    circuit: (nodes) =>
+      @connect(nodes)
+      @relationship(nodes[nodes.length - 1], nodes[0])
+    translate: (dx, dy) =>
+      for node in @nodes
+        node.x += dx
+        node.y += dy
+      @
     merge: (o) ->
       @relationships = @relationships.concat o.relationships
       @nodes = @nodes.concat o.nodes
@@ -177,6 +189,49 @@ do ->
     g.out = columns[columns.length - 1][0]
     g
 
+  towerBridgeGraph = ->
+    tw = 12
+    gw = 90
+    sw = 100
+    h = 130
+    d = 30
+    p = 20
+    sh = 20
+    g = new Graph()
+    g.in = g.node(-gw - sw, 0)
+    g.out = g.node(gw + sw, 0)
+    g.circuit [
+      g.node(-gw - tw, d)
+      b1 = g.node(-gw - tw, 0)
+      a1 = g.node(-gw - tw, -h)
+      g.node(-gw - tw, -h - p)
+      g.node(-gw, -h - p - sh)
+      g.node(-gw + tw, -h - p)
+      a2 = g.node(-gw + tw, -h)
+      b2 = g.node(-gw + tw, 0)
+      g.node(-gw + tw, d)
+    ]
+    g.circuit [
+      g.node(gw - tw, d)
+      b3 = g.node(gw - tw, 0)
+      a3 = g.node(gw - tw, -h)
+      g.node(gw - tw, -h - p)
+      g.node(gw, -h - p - sh)
+      g.node(gw + tw, -h - p)
+      a4 = g.node(gw + tw, -h)
+      b4 = g.node(gw + tw, 0)
+      g.node(gw + tw, d)
+    ]
+    g.relationship(g.in, a1)
+    g.relationship(g.in, b1)
+    g.relationship(a2, a3)
+    g.relationship(a4, g.out)
+    g.relationship(b4, g.out)
+    angle = 45 * Math.PI / 180
+    g.relationship(b2, g.node(-gw + tw + gw * Math.sin(angle), -gw * Math.cos(angle)))
+    g.relationship(b3, g.node(gw - tw - gw * Math.sin(angle), -gw * Math.cos(angle)))
+    g
+
   canaryWharfGraph = ->
     g = new Graph()
     h1 = 350
@@ -205,12 +260,6 @@ do ->
       g.relationship(outline[i], outline[i + 1])
     g
 
-  translate = (g, dx, dy) ->
-    for node in g.nodes
-      node.x += dx
-      node.y += dy
-    g
-
   d3.selectAll('div.slide').each ->
     svg = d3.select(this).append('svg')
     .attr('class', 'fill')
@@ -232,17 +281,17 @@ do ->
     generateGraph = (time) ->
       g = new Graph()
       landmarks = [
-        translate(bigBenGraph(), 100, 295)
-        translate(wheelGraph(time), 320, 340)
-        translate(gherkinGraph(), 600, 345)
-        translate(shardGraph(), 800, 55)
-        translate(canaryWharfGraph(), 1050, 505)
+        bigBenGraph().translate(100, 295)
+        wheelGraph(time).translate(320, 340)
+        gherkinGraph().translate(600, 345)
+        shardGraph().translate(800, 55)
+        towerBridgeGraph().translate(1100, 505)
+        canaryWharfGraph().translate(1450, 505)
       ]
       out = null
       for landmark in landmarks
         g.merge(landmark)
         if out and landmark.in
-          console.log landmark.in.y
           g.relationship(out, landmark.in)
         out = landmark.out
       g
