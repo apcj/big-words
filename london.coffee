@@ -13,6 +13,7 @@ do ->
       node =
         x: x
         y: y
+        radius: 7
       @nodes.push node
       node
     relationship: (source, target) =>
@@ -33,35 +34,58 @@ do ->
         node.x += dx
         node.y += dy
       @
+    scale: (factor) =>
+      for node in @nodes
+        node.x *= factor
+        node.y *= factor
+        node.radius *= factor
+      @
     merge: (o) ->
       @relationships = @relationships.concat o.relationships
       @nodes = @nodes.concat o.nodes
 
-  render = (g, container) ->
+  render = (g, svg) ->
+#    svg.selectAll('rect').data([true])
+#    .enter()
+#    .append('rect')
+#    .attr('width', 960)
+#    .attr('height', 117)
+#    .attr('stroke-width', 1)
+#    .attr('stroke', 'black')
+#    .attr('fill', 'none')
+
+    container = svg.selectAll('g').data([g])
+
+    container
+    .enter()
+    .append('g')
+
     lines = container.selectAll('path').data(g.relationships)
 
     lines.enter().append('path')
-    .attr('fill', 'none')
-    .attr('stroke', 'black')
-    .attr('stroke-width', 1)
-    .attr('marker-end', 'url(#markerArrow)')
+    .attr('fill', 'black')
+    .attr('stroke', 'none')
 
     lines
     .attr('d', (d) ->
-      if d.arcRatio?
+      dx = d.target.x - d.source.x
+      dy = d.target.y - d.source.y
+      length = Math.sqrt(dx * dx + dy * dy)
+      if d.deflection?
+        new neo.utils.arcArrow(d.source.radius, d.target.radius, length, d.deflection, 0.5, 3, 4, 'internal').outline(0)
+      else
+        new neo.utils.straightArrow(d.source.radius, d.target.radius, length, 0.5, 3, 4, 'internal').outline(0)
+    )
+    .attr('transform', (d) ->
         dx = d.target.x - d.source.x
         dy = d.target.y - d.source.y
-        length = Math.sqrt(dx * dx + dy * dy)
-        arcRadius = length * d.arcRatio / 2
-        ['M', d.source.x, d.source.y, 'A', arcRadius, arcRadius, 0, 0, 1, d.target.x, d.target.y].join(' ')
-      else
-        ['M', d.source.x, d.source.y, 'L', d.target.x, d.target.y].join(' ')
-    )
+        "translate(#{d.source.x}, #{d.source.y}) rotate(#{Math.atan2(dy, dx) * 180 / Math.PI})"
+    );
 
     circles = container.selectAll('circle').data(g.nodes)
 
     circles.enter().append('circle')
-    .attr('r', (d) -> d.radius ? 7)
+    .attr('r', (d) -> d.radius)
     .attr('fill', 'white')
     .attr('stroke', 'black')
     .attr('stroke-width', 1)
@@ -79,7 +103,7 @@ do ->
     clearance = wheelRadius / 10
     previousNode = null
     for i in [0..spokeCount - 1]
-      angle = (i * Math.PI * 2 / spokeCount + time / 10000) % 360
+      angle = Math.PI * 2 * ((i / spokeCount) + (time / 20000))
       capsule = g.node(wheelRadius * Math.cos(angle), wheelRadius * Math.sin(angle))
       g.relationship(hub, capsule)
       if previousNode
@@ -130,7 +154,7 @@ do ->
     g.in = bottomRow[0]
     g.out = bottomRow[bottomRow.length - 1]
 
-    g.relationship(rows[0][0], rows[0][rows[0].length - 1]).arcRatio = 1.03
+    g.relationship(rows[0][0], rows[0][rows[0].length - 1]).deflection = -60
 
     g
 
@@ -169,7 +193,7 @@ do ->
 
   shardGraph = ->
     g = new Graph()
-    size = 5
+    size = 4
 
     columns = []
 
@@ -234,8 +258,8 @@ do ->
 
   canaryWharfGraph = ->
     g = new Graph()
-    h1 = 350
-    h2 = 300
+    h1 = 330
+    h2 = 280
     w1 = 40
     w2 = 33
     gap = 30
@@ -260,43 +284,32 @@ do ->
       g.relationship(outline[i], outline[i + 1])
     g
 
+  generateGraph = (time) ->
+    g = new Graph()
+    landmarks = [
+      bigBenGraph().translate(100, 295)
+      wheelGraph(time).translate(320, 340)
+      gherkinGraph().translate(600, 345)
+      shardGraph().translate(800, 145)
+      towerBridgeGraph().translate(1100, 505)
+      canaryWharfGraph().translate(1450, 505)
+    ]
+    out = null
+    for landmark in landmarks
+      g.merge(landmark)
+      if out and landmark.in
+        g.relationship(out, landmark.in)
+      out = landmark.out
+    g.scale(0.3).translate(0, -37)
+
+  window.generateGraph = generateGraph
+  window.render = render
+
   d3.selectAll('div.slide').each ->
     svg = d3.select(this).append('svg')
     .attr('class', 'fill')
 
-    svg.append('defs')
-    .append('marker')
-    .attr('id', 'markerArrow')
-    .attr('viewBox', '0 -5 10 10')
-    .attr('refX', 20)
-    .attr('refY', 0)
-    .attr('markerWidth', 6)
-    .attr('markerHeight', 6)
-    .attr('orient', 'auto')
-    .append('path')
-    .attr('d', 'M0,-5L10,0L0,5')
-
-    container = svg.append('g')
-
-    generateGraph = (time) ->
-      g = new Graph()
-      landmarks = [
-        bigBenGraph().translate(100, 295)
-        wheelGraph(time).translate(320, 340)
-        gherkinGraph().translate(600, 345)
-        shardGraph().translate(800, 55)
-        towerBridgeGraph().translate(1100, 505)
-        canaryWharfGraph().translate(1450, 505)
-      ]
-      out = null
-      for landmark in landmarks
-        g.merge(landmark)
-        if out and landmark.in
-          g.relationship(out, landmark.in)
-        out = landmark.out
-      g
-
     d3.timer (time) ->
       graph = generateGraph time
-      render graph, container
+      render graph, svg
       false
