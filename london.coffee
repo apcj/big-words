@@ -1,8 +1,3 @@
----
----
-
-dummyStatementToHelpIntelliJWithPreamble = true
-
 do ->
 
   class Graph

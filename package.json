@@ -1,0 +1,10 @@
+{
+    "name": "module-name",
+    "version": "1.0.0",
+    "description": "An example module to illustrate the usage of a package.json",
+    "author": "Alistair Jones <alistair.jones@gmail.com>",
+    "dependencies": {
+        "jsdom": "3.1.2",
+        "xmlserializer": "0.3.3"
+    }
+}

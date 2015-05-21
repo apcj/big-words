@@ -1,6 +1,3 @@
----
----
-
 dummyStatementToHelpIntelliJWithPreamble = true
 
 do ->

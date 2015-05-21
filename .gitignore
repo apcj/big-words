@@ -1,3 +1,5 @@
+*.js
 .idea/
 *.iml
-_site/
+target/
+node_modules/
