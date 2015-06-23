@@ -49,6 +49,30 @@ do ->
 #    .attr('stroke', 'black')
 #    .attr('fill', 'none')
 
+    svg.selectAll('image').data([
+      {
+        href: 'file:///Users/apcj/projects/apcj/big-words/images/neo4j_logo.png'
+        x: 595
+        y: 9
+        width: 175
+        height: 70
+      }
+      {
+        href: 'file:///Users/apcj/projects/apcj/big-words/images/london_user_group.png'
+        x: 650
+        y: 61
+        width: 270
+        height: 43
+      }
+    ])
+    .enter()
+    .append("svg:image")
+    .attr('x', (d) -> d.x)
+    .attr('y', (d) -> d.y)
+    .attr('width', (d) -> d.width)
+    .attr('height', (d) -> d.height)
+    .attr("xlink:href", (d) -> d.href)
+
     container = svg.selectAll('g').data([g])
 
     container
@@ -171,7 +195,7 @@ do ->
       reflectedNodes faceBox * 3 / 5, -faceBox * 2
       faceTop = reflectedNodes faceBox, -faceBox
       faceBottom = reflectedNodes faceBox, faceBox
-      [g.node(-faceBox, faceBox * 7), g.out = g.node(faceBox, faceBox * 7)]
+      [g.in = g.node(-faceBox, faceBox * 7), g.out = g.node(faceBox, faceBox * 7)]
     ]
     tip = g.node(0, -faceBox * 4)
     g.relationship(tip, levels[0][0])
@@ -253,8 +277,8 @@ do ->
 
   canaryWharfGraph = ->
     g = new Graph()
-    h1 = 330
-    h2 = 280
+    h1 = 320
+    h2 = 270
     w1 = 40
     w2 = 33
     gap = 30
@@ -272,7 +296,7 @@ do ->
       g.node(w1 + gap, 0)
       g.node(w1 + gap, -h2)
       g.node(w1 + w2 * 2 + gap, -h2)
-      g.node(w1 + w2 * 2 + gap, 0)
+      g.out = g.node(w1 + w2 * 2 + gap, 0)
     ]
 
     for i in [0..outline.length - 2]
@@ -289,13 +313,14 @@ do ->
       towerBridgeGraph().translate(1100, 505)
       canaryWharfGraph().translate(1450, 505)
     ]
-    out = null
+    out = g.node(0, 505)
     for landmark in landmarks
       g.merge(landmark)
-      if out and landmark.in
+      if landmark.in
         g.relationship(out, landmark.in)
       out = landmark.out
-    g.scale(0.3).translate(0, -37)
+    g.relationship(out, g.node(2742, 505))
+    g.scale(0.35).translate(0, -42)
 
   window.generateGraph = generateGraph
   window.render = render

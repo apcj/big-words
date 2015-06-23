@@ -15,5 +15,9 @@ jsdom.env '<html><body></body></html>', [
   svg = window.d3.select('body').append('svg')
   for i in [0..24]
     window.render window.generateGraph(i * 40), svg
-    fs.writeFileSync 'target/frames/frame' + i + 100 + '.svg', xmlserializer.serializeToString(svg.node())
+    svgString = xmlserializer.serializeToString(svg.node())
+    svgString = svgString.replace(/href=/g, 'xlink:href=')
+    svgString = svgString.replace('xmlns="http://www.w3.org/2000/svg"',
+        'xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"')
+    fs.writeFileSync 'target/frames/frame' + (i + 100) + '.svg', svgString
     i++
