@@ -22,34 +22,29 @@
             }
         }
 
-        function viewBox(size) {
-            return [-size, -size, size * 2, size * 2].join(' ');
-        }
+        var canvas = parent.append('canvas')
+            .attr('class', 'fill').node();
+        canvas.width = this.clientWidth;
+        canvas.height = this.clientHeight;
 
-        var svg = parent.append('svg')
-            .attr('class', 'fill');
-
-        var circles = svg.selectAll('circle').data(data);
-
-        circles
-            .enter().append('circle')
-            .attr('r', radius)
-            .attr('cx', function(d) {
-                return d.x;
-            })
-            .attr('cy', function(d) {
-                return d.y;
-            })
-            .attr('r', radius);
-
-        var period = 2000;
-        var cutOver = period * 0.7;
+        var period = 10000;
+        var cut1 = period * 0.1;
+        var cut2 = period * 0.8;
         var whiteToBlack = d3.interpolateRgb("#FFF", "#000");
         var phases = [
             {
                 colour: function(t) {
                     return function(dot) {
-                        return whiteToBlack(Math.sin((t - dot.delay) / 1000))
+                        var stage = Math.sin((t - dot.delay) / 1000);
+                        var fade = d3.scale.linear().domain([cut2, period]).range([stage, 1]);
+                        return whiteToBlack(fade(t));
+                    }
+                }
+            },
+            {
+                colour: function(t) {
+                    return function(dot) {
+                        return whiteToBlack(Math.sin((t - dot.delay) / 1000));
                     }
                 }
             },
@@ -57,22 +52,32 @@
                 colour: function(t) {
                     return function(dot) {
                         var stage = Math.sin((t - dot.delay) / 1000);
-                        var fade = d3.scale.linear().domain([cutOver, period]).range([stage, dot.mask ? 0 : 1]);
+                        var fade = d3.scale.linear().domain([cut2, period]).range([stage, dot.mask ? 0 : 1]);
                         return whiteToBlack(fade(t));
                     }
                 }
             }
         ];
-        var scale = function(t) {
-            return radius * Math.pow(count, t / period)
-        };
+        var visibleRadius = canvas.height / 2;
+        var base = Math.sqrt(1 / count);
         d3.timer(function(elapsed) {
             var t = elapsed % period;
-            var phase = t < cutOver ? phases[0] : phases[1];
+            var phase = t < cut1 ? phases[0] : t < cut2 ? phases[1] : phases[2];
 
-            svg.attr('viewBox', viewBox(scale(t)));
-
-            circles.attr('fill', phase.colour(t))
+            var ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            var scale = visibleRadius * Math.pow(base, 2 * t / period) / radius;
+            ctx.scale(scale, scale);
+            for (var i = 0; i < data.length; i++) {
+                var dot = data[i];
+                ctx.fillStyle = phase.colour(t)(dot);
+                ctx.beginPath();
+                ctx.arc(dot.x, dot.y, radius, 0, Math.PI * 2, false);
+                ctx.fill();
+            }
+            ctx.restore();
         });
     });
 })();
