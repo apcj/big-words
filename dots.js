@@ -10,7 +10,6 @@
         var data = [];
         for (var x = -count; x < count; x++) {
             var xr = x - (bigRadius * 2) * Math.round(x / (bigRadius * 2));
-            console.log(x, xr);
             for (var y = -count; y < count; y++) {
                 var yr = y - (bigRadius * 2) * Math.round(y / (bigRadius * 2));
                 data.push({
