@@ -26,7 +26,7 @@
         canvas.width = this.clientWidth;
         canvas.height = this.clientHeight;
 
-        var period = 10000;
+        var period = 1000;
         var cut1 = period * 0.1;
         var cut2 = period * 0.8;
         var whiteToBlack = d3.interpolateRgb("#FFF", "#000");
