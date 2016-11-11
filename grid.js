@@ -10,14 +10,14 @@
 
         var count = 8;
         var t = 0;
-        var xData = [];
-        var yData = [];
+        var xData = { points: [], offset: 0 };
+        var yData = { points: [], offset: 0 };
         for (var i = 0; i < count; i++) {
-            xData.push({
+            xData.points.push({
                 d: Math.random(),
                 velocity: Math.random() * 2 - 1
             });
-            yData.push({
+            yData.points.push({
                 d: Math.random(),
                 velocity: Math.random() * 2 - 1
             });
@@ -31,22 +31,28 @@
             }
         }
 
-        console.log(colours);
-
         function advance(data, elapsed) {
-            for (var i = 0; i < data.length; i++) {
-                var dot = data[i];
-                dot.d = dot.d + (elapsed - t) * dot.velocity / 2000;
+            for (var i = 0; i < data.points.length; i++) {
+                var dot = data.points[i];
+                dot.d = dot.d + (elapsed - t) * dot.velocity / 5000;
                 if (dot.d < 0) {
-                    dot.d = 0;
-                    dot.velocity = -dot.velocity;
+                    dot.d = 1;
+                    data.offset--;
+                    if (data.offset < 0)
+                    {
+                        data.offset = count;
+                    }
                 }
                 if (dot.d > 1) {
-                    dot.d = 1;
-                    dot.velocity = -dot.velocity;
+                    dot.d = 0;
+                    data.offset++;
+                    if (data.offset > count)
+                    {
+                        data.offset = 0;
+                    }
                 }
             }
-            data.sort(function(a, b) {
+            data.points.sort(function(a, b) {
                 return b.d - a.d;
             });
         }
@@ -58,11 +64,11 @@
             t = elapsed;
 
             var ctx = canvas.getContext('2d');
-            for (var x = 0; x <= xData.length; x++) {
-                var xPoint = x === 0 ? {d: 1} : xData[x - 1];
-                for (var y = 0; y <= yData.length; y++) {
-                    var yPoint = y === 0 ? {d: 1} : yData[y - 1];
-                    ctx.fillStyle = colours[x * (count + 1) + y];
+            for (var x = 0; x <= xData.points.length; x++) {
+                var xPoint = x === 0 ? {d: 1} : xData.points[x - 1];
+                for (var y = 0; y <= yData.points.length; y++) {
+                    var yPoint = y === 0 ? {d: 1} : yData.points[y - 1];
+                    ctx.fillStyle = colours[(x + xData.offset) % (count + 1) * (count + 1) + (y + yData.offset) % (count + 1)];
                     ctx.fillRect(0, 0, xPoint.d * canvas.width, yPoint.d * canvas.height);
                 }
             }
