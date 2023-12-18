@@ -1,10 +1,12 @@
 {
-    "name": "module-name",
-    "version": "1.0.0",
-    "description": "An example module to illustrate the usage of a package.json",
-    "author": "Alistair Jones <alistair.jones@gmail.com>",
-    "dependencies": {
-        "jsdom": "3.1.2",
-        "xmlserializer": "0.3.3"
-    }
+  "name": "big-words",
+  "version": "1.0.0",
+  "directories": {
+    "lib": "lib"
+  },
+  "author": "",
+  "dependencies": {
+    "jsdom": "^23.0.1",
+    "xmlserializer": "^0.6.1"
+  }
 }
